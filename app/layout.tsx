@@ -2,17 +2,18 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "社長資料チャットボット",
-  description: "社内資料だけを根拠に回答する、日本語対応の資料ベースチャットボット",
-  applicationName: "社長資料チャットボット",
-  keywords: ["社内チャットボット", "資料検索", "Next.js", "Vercel", "日本語"],
+  title: "社内ナレッジポータル",
+  description:
+    "社内マニュアルと就業規則を検索・閲覧できる、Next.js + Supabase 前提の社内共有ポータル MVP です。",
+  applicationName: "社内ナレッジポータル",
+  keywords: ["社内ポータル", "社内マニュアル", "就業規則", "ナレッジ検索", "Next.js", "Supabase"],
   icons: {
     icon: "/icon.svg"
   }
 };
 
 export const viewport: Viewport = {
-  themeColor: "#dff6dd"
+  themeColor: "#f4efe6"
 };
 
 export default function RootLayout({
