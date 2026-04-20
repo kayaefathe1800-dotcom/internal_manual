@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../../lib/auth";
 import { deleteStoredDocument } from "../../../../lib/document-storage";
 
@@ -27,6 +27,16 @@ function forbiddenResponse() {
   );
 }
 
+function internalErrorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : "資料削除中にエラーが発生しました。";
+  return NextResponse.json(
+    {
+      error: message
+    },
+    { status: 500 }
+  );
+}
+
 function requireAdmin(request: Request) {
   const session = getUserFromRequest(request);
 
@@ -42,29 +52,33 @@ function requireAdmin(request: Request) {
 }
 
 export async function DELETE(request: Request, { params }: Props) {
-  const adminUser = requireAdmin(request);
+  try {
+    const adminUser = requireAdmin(request);
 
-  if (adminUser instanceof NextResponse) {
-    return adminUser;
+    if (adminUser instanceof NextResponse) {
+      return adminUser;
+    }
+
+    const { id } = await params;
+    const deleted = await deleteStoredDocument(id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          error: "対象の資料が見つかりません。"
+        },
+        { status: 404 }
+      );
+    }
+
+    revalidatePath("/manuals");
+    revalidatePath("/rules");
+    revalidatePath("/upload");
+
+    return NextResponse.json({
+      success: true
+    });
+  } catch (error) {
+    return internalErrorResponse(error);
   }
-
-  const { id } = await params;
-  const deleted = await deleteStoredDocument(id);
-
-  if (!deleted) {
-    return NextResponse.json(
-      {
-        error: "対象の資料が見つかりません。"
-      },
-      { status: 404 }
-    );
-  }
-
-  revalidatePath("/manuals");
-  revalidatePath("/rules");
-  revalidatePath("/upload");
-
-  return NextResponse.json({
-    success: true
-  });
 }

@@ -39,6 +39,20 @@ function getCategoryLabel(category: PortalCategory) {
   return category === "manual" ? "マニュアル" : "就業規則";
 }
 
+async function readJsonSafely<T>(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -68,10 +82,10 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
       const response = await authFetch("/api/files", {
         cache: "no-store"
       });
-      const data = (await response.json()) as FilesResponse;
+      const data = await readJsonSafely<FilesResponse>(response);
 
-      if (!response.ok || !data.files) {
-        throw new Error(data.error ?? "資料一覧の取得に失敗しました。");
+      if (!response.ok || !data?.files) {
+        throw new Error(data?.error ?? "資料一覧の取得に失敗しました。");
       }
 
       setFiles(data.files);
@@ -106,10 +120,10 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
           method: "POST",
           body: formData
         });
-        const data = (await response.json()) as UploadResponse;
+        const data = await readJsonSafely<UploadResponse>(response);
 
-        if (!response.ok || !data.id) {
-          throw new Error(data.error ?? "アップロードに失敗しました。");
+        if (!response.ok || !data?.id) {
+          throw new Error(data?.error ?? "アップロードに失敗しました。");
         }
 
         await refreshFiles();
@@ -142,10 +156,10 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
       const response = await authFetch(`/api/files/${file.id}`, {
         method: "DELETE"
       });
-      const data = (await response.json()) as { success?: boolean; error?: string };
+      const data = await readJsonSafely<{ success?: boolean; error?: string }>(response);
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error ?? "削除に失敗しました。");
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error ?? "削除に失敗しました。");
       }
 
       setFiles((current) => current.filter((currentFile) => currentFile.id !== file.id));
@@ -162,7 +176,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
       });
 
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        const data = await readJsonSafely<{ error?: string }>(response);
         throw new Error(data?.error ?? "資料の表示に失敗しました。");
       }
 
