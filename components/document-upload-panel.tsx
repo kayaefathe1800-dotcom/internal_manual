@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { authFetch } from "../lib/auth-client";
+import { useAuth } from "./auth-provider";
 import type { StoredFileRecord } from "../types/portal";
 
 type Props = {
@@ -33,16 +34,24 @@ function formatDate(value: string) {
 }
 
 export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<StoredFileRecord[]>(initialFiles);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+  const canManageFiles = isAdmin || Boolean(user?.isAdmin);
 
   useEffect(() => {
     setFiles(initialFiles);
   }, [initialFiles]);
+
+  useEffect(() => {
+    if (canManageFiles && initialFiles.length === 0) {
+      void refreshFiles();
+    }
+  }, [canManageFiles, initialFiles.length]);
 
   async function refreshFiles() {
     setLoading(true);
@@ -73,7 +82,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
-    if (!file || !isAdmin) {
+    if (!file || !canManageFiles) {
       return;
     }
 
@@ -108,7 +117,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
   }
 
   async function handleDelete(file: StoredFileRecord) {
-    if (!isAdmin) {
+    if (!canManageFiles) {
       return;
     }
 
@@ -158,7 +167,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
     }
   }
 
-  if (!isAdmin) {
+  if (!canManageFiles) {
     return null;
   }
 
