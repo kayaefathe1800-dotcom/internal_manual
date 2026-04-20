@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminUser } from "../../../../../lib/auth";
+import { getUserFromAuthorizationHeader } from "../../../../../lib/auth";
 import { getStoredDocument } from "../../../../../lib/document-storage";
 
 type Props = {
@@ -7,6 +7,15 @@ type Props = {
     id: string;
   }>;
 };
+
+function unauthorizedResponse() {
+  return NextResponse.json(
+    {
+      error: "認証が必要です。"
+    },
+    { status: 401 }
+  );
+}
 
 function forbiddenResponse() {
   return NextResponse.json(
@@ -17,11 +26,25 @@ function forbiddenResponse() {
   );
 }
 
-export async function GET(_: Request, { params }: Props) {
-  const adminUser = await getAdminUser();
+function requireAdmin(request: Request) {
+  const session = getUserFromAuthorizationHeader(request);
 
-  if (!adminUser) {
+  if (!session) {
+    return unauthorizedResponse();
+  }
+
+  if (!session.user.isAdmin) {
     return forbiddenResponse();
+  }
+
+  return session.user;
+}
+
+export async function GET(request: Request, { params }: Props) {
+  const adminUser = requireAdmin(request);
+
+  if (adminUser instanceof NextResponse) {
+    return adminUser;
   }
 
   const { id } = await params;

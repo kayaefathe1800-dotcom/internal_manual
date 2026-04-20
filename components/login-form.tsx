@@ -1,21 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
-import { loginAction } from "../app/login/actions";
+import { useState } from "react";
+import { storeToken } from "../lib/auth-client";
+import type { PortalUser } from "../types/portal";
 
 type Props = {
   redirectTo: string;
 };
 
+type LoginResponse = {
+  user?: PortalUser;
+  token?: string;
+  error?: string;
+};
+
 export function LoginForm({ redirectTo }: Props) {
-  const [state, formAction, pending] = useActionState(loginAction, undefined);
+  const [email, setEmail] = useState("employee@example.co.jp");
+  const [password, setPassword] = useState("employee123");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      const data = (await response.json()) as LoginResponse;
+
+      if (!response.ok || !data.token || !data.user) {
+        throw new Error(data.error ?? "ログインに失敗しました。");
+      }
+
+      storeToken(data.token);
+      window.location.href = redirectTo || "/";
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "ログインに失敗しました。");
+      setPending(false);
+    }
+  }
 
   return (
     <>
-      <form className="form-grid" action={formAction}>
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-
+      <form className="form-grid" onSubmit={handleSubmit}>
         <div className="field-group">
           <label className="field-label" htmlFor="email">
             メールアドレス
@@ -25,7 +65,8 @@ export function LoginForm({ redirectTo }: Props) {
             id="email"
             name="email"
             type="email"
-            defaultValue="employee@example.co.jp"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
             required
           />
         </div>
@@ -39,19 +80,10 @@ export function LoginForm({ redirectTo }: Props) {
             id="password"
             name="password"
             type="password"
-            defaultValue="employee123"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             required
           />
-        </div>
-
-        <div className="field-group">
-          <label className="field-label" htmlFor="role">
-            権限
-          </label>
-          <select className="select-input" id="role" name="role" defaultValue="employee">
-            <option value="employee">一般社員</option>
-            <option value="admin">管理者</option>
-          </select>
         </div>
 
         <div className="login-actions">
@@ -64,7 +96,7 @@ export function LoginForm({ redirectTo }: Props) {
         </div>
       </form>
 
-      {state?.error ? <div className="error-banner">{state.error}</div> : null}
+      {error ? <div className="error-banner">{error}</div> : null}
     </>
   );
 }

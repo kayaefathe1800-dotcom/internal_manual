@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
-import { getAdminUser } from "../../../../lib/auth";
+import { getUserFromAuthorizationHeader } from "../../../../lib/auth";
 import { deleteStoredDocument } from "../../../../lib/document-storage";
+
+type Props = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
+function unauthorizedResponse() {
+  return NextResponse.json(
+    {
+      error: "認証が必要です。"
+    },
+    { status: 401 }
+  );
+}
 
 function forbiddenResponse() {
   return NextResponse.json(
@@ -11,17 +26,25 @@ function forbiddenResponse() {
   );
 }
 
-type Props = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+function requireAdmin(request: Request) {
+  const session = getUserFromAuthorizationHeader(request);
 
-export async function DELETE(_: Request, { params }: Props) {
-  const adminUser = await getAdminUser();
+  if (!session) {
+    return unauthorizedResponse();
+  }
 
-  if (!adminUser) {
+  if (!session.user.isAdmin) {
     return forbiddenResponse();
+  }
+
+  return session.user;
+}
+
+export async function DELETE(request: Request, { params }: Props) {
+  const adminUser = requireAdmin(request);
+
+  if (adminUser instanceof NextResponse) {
+    return adminUser;
   }
 
   const { id } = await params;

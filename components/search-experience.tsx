@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
+import { authFetch } from "../lib/auth-client";
 import type { PortalCategory, SearchResult } from "../types/portal";
 
 type SearchResponse = {
   query: string;
   total: number;
   results: SearchResult[];
+  error?: string;
 };
 
 type Props = {
@@ -35,7 +37,7 @@ export function SearchExperience({ popularQueries }: Props) {
       return;
     }
 
-    const response = await fetch("/api/search", {
+    const response = await authFetch("/api/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -47,6 +49,11 @@ export function SearchExperience({ popularQueries }: Props) {
     });
 
     const data = (await response.json()) as SearchResponse;
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "検索に失敗しました。");
+    }
+
     setResults(data.results);
     setSearchedQuery(data.query);
   }
@@ -92,7 +99,7 @@ export function SearchExperience({ popularQueries }: Props) {
               className="search-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="例: 有給の取り方 / 通勤費の精算 / 在宅勤務の申請"
+              placeholder="例: 有給の取り方 / 交通費の精算方法 / 在宅勤務の申請"
             />
 
             <div className="search-actions">
@@ -125,9 +132,7 @@ export function SearchExperience({ popularQueries }: Props) {
 
           <div className="search-results">
             {searchedQuery ? (
-              <p className="search-summary">
-                「{searchedQuery}」の検索結果: {results.length} 件
-              </p>
+              <p className="search-summary">「{searchedQuery}」の検索結果: {results.length} 件</p>
             ) : (
               <p className="search-summary">検索語を入力すると結果が表示されます。</p>
             )}
@@ -170,7 +175,7 @@ export function SearchExperience({ popularQueries }: Props) {
             ) : (
               <div className="empty-state">
                 <strong>自然な日本語で検索できます。</strong>
-                <p>例: 「有給の取り方」「交通費の精算方法」「遅刻したときの連絡」</p>
+                <p>例: 「有給の取り方」「交通費の精算」「在宅勤務の申請手順」</p>
               </div>
             )}
           </div>

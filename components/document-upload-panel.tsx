@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { authFetch } from "../lib/auth-client";
 import type { StoredFileRecord } from "../types/portal";
 
 type Props = {
@@ -45,9 +46,10 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
 
   async function refreshFiles() {
     setLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch("/api/files", {
+      const response = await authFetch("/api/files", {
         cache: "no-store"
       });
       const data = (await response.json()) as FilesResponse;
@@ -82,31 +84,25 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
       setError(null);
       setMessage("");
 
-      const response = await fetch("/api/files", {
-        method: "POST",
-        body: formData
-      });
+      try {
+        const response = await authFetch("/api/files", {
+          method: "POST",
+          body: formData
+        });
+        const data = (await response.json()) as UploadResponse;
 
-      const data = (await response.json()) as UploadResponse;
+        if (!response.ok || !data.id) {
+          throw new Error(data.error ?? "アップロードに失敗しました。");
+        }
 
-      if (!response.ok || !data.id || !data.fileName || !data.url || !data.createdAt) {
-        setError(data.error ?? "アップロードに失敗しました。");
-        return;
-      }
+        await refreshFiles();
+        setMessage(`${data.fileName ?? "資料"} をアップロードしました。`);
 
-      setFiles((current) => [
-        {
-          id: data.id!,
-          fileName: data.fileName!,
-          url: data.url!,
-          createdAt: data.createdAt!
-        },
-        ...current
-      ]);
-      setMessage(`「${data.fileName}」をアップロードしました。`);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } catch (nextError) {
+        setError(nextError instanceof Error ? nextError.message : "アップロードに失敗しました。");
       }
     });
   }
@@ -125,22 +121,41 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
     setError(null);
     setMessage("");
 
-    const response = await fetch(`/api/files/${file.id}`, {
-      method: "DELETE"
-    });
-    const data = (await response.json()) as { success?: boolean; error?: string };
+    try {
+      const response = await authFetch(`/api/files/${file.id}`, {
+        method: "DELETE"
+      });
+      const data = (await response.json()) as { success?: boolean; error?: string };
 
-    if (!response.ok || !data.success) {
-      setError(data.error ?? "削除に失敗しました。");
-      return;
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "削除に失敗しました。");
+      }
+
+      setFiles((current) => current.filter((currentFile) => currentFile.id !== file.id));
+      setMessage(`${file.fileName} を削除しました。`);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "削除に失敗しました。");
     }
-
-    setFiles((current) => current.filter((currentFile) => currentFile.id !== file.id));
-    setMessage(`「${file.fileName}」を削除しました。`);
   }
 
-  function handleView(file: StoredFileRecord) {
-    window.open(file.url, "_blank", "noopener,noreferrer");
+  async function handleView(file: StoredFileRecord) {
+    try {
+      const response = await authFetch(file.url, {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "資料の表示に失敗しました。");
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "資料の表示に失敗しました。");
+    }
   }
 
   if (!isAdmin) {
@@ -152,7 +167,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
       <div className="page-heading">
         <div>
           <p className="section-label">資料アップロード</p>
-          <h1>管理者向け資料管理</h1>
+          <h1>管理者専用の資料管理</h1>
         </div>
         <button type="button" className="ghost-link toolbar-button" onClick={() => void refreshFiles()} disabled={loading}>
           {loading ? "更新中..." : "一覧を更新"}
@@ -161,9 +176,9 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
 
       <div className="upload-panel-grid">
         <div className="upload-dropzone">
-          <p className="upload-title">管理者のみ、資料のアップロード・閲覧・削除ができます。</p>
+          <p className="upload-title">社内資料のアップロード・閲覧・削除ができます。</p>
           <p className="upload-copy">
-            ファイルをアップロードすると一覧へ即時反映されます。対応形式は PDF、Word、Excel、CSV、テキスト、PowerPoint です。
+            PDF、Word、Excel、CSV、テキスト、PowerPoint を登録できます。アップロード後は一覧を再取得して即時反映します。
           </p>
           <button type="button" className="submit-button upload-button-wide" onClick={handleChooseFile} disabled={isPending}>
             {isPending ? "アップロード中..." : "資料を選択する"}
@@ -187,10 +202,10 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
                 <article key={file.id} className="stored-file-item">
                   <div className="stored-file-header">
                     <strong>{file.fileName}</strong>
-                    <span>登録: {formatDate(file.createdAt)}</span>
+                    <span>登録日: {formatDate(file.createdAt)}</span>
                   </div>
                   <div className="stored-file-actions">
-                    <button type="button" className="ghost-link action-button" onClick={() => handleView(file)}>
+                    <button type="button" className="ghost-link action-button" onClick={() => void handleView(file)}>
                       閲覧
                     </button>
                     <button type="button" className="danger-button action-button" onClick={() => void handleDelete(file)}>

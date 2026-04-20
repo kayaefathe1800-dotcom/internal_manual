@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: Props) {
       <section className="login-card">
         <p className="eyebrow">社員ログイン</p>
         <h1>社内ナレッジポータルにログイン</h1>
-        <p>管理者は資料のアップロード・閲覧・削除を行えます。一般社員は検索と閲覧のみ利用できます。</p>
+        <p>ログイン後はページ遷移や再読み込み後も状態が維持されます。管理者は資料管理、一般社員は閲覧と検索を利用できます。</p>
 
         <LoginForm redirectTo={redirectTo} />
 

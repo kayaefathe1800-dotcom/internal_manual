@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
-import { getAdminUser } from "../../../lib/auth";
+import { getUserFromAuthorizationHeader } from "../../../lib/auth";
 import { listStoredDocuments, saveUploadedDocument } from "../../../lib/document-storage";
+
+function unauthorizedResponse() {
+  return NextResponse.json(
+    {
+      error: "認証が必要です。"
+    },
+    { status: 401 }
+  );
+}
 
 function forbiddenResponse() {
   return NextResponse.json(
@@ -11,11 +20,25 @@ function forbiddenResponse() {
   );
 }
 
-export async function GET() {
-  const adminUser = await getAdminUser();
+function requireAdmin(request: Request) {
+  const session = getUserFromAuthorizationHeader(request);
 
-  if (!adminUser) {
+  if (!session) {
+    return unauthorizedResponse();
+  }
+
+  if (!session.user.isAdmin) {
     return forbiddenResponse();
+  }
+
+  return session.user;
+}
+
+export async function GET(request: Request) {
+  const adminUser = requireAdmin(request);
+
+  if (adminUser instanceof NextResponse) {
+    return adminUser;
   }
 
   const files = await listStoredDocuments();
@@ -23,10 +46,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const adminUser = await getAdminUser();
+  const adminUser = requireAdmin(request);
 
-  if (!adminUser) {
-    return forbiddenResponse();
+  if (adminUser instanceof NextResponse) {
+    return adminUser;
   }
 
   const formData = await request.formData();

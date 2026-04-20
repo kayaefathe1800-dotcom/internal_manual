@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { PortalUser } from "../types/portal";
 
@@ -10,7 +11,11 @@ type Props = {
 
 export async function SiteShell({ children, user }: Props) {
   const headerList = await headers();
-  const pathname = headerList.get("x-pathname") ?? "";
+  const pathname = headerList.get("x-pathname") ?? "/";
+
+  if (!user) {
+    redirect(`/login?redirect=${encodeURIComponent(pathname)}`);
+  }
 
   return (
     <main className="portal-shell">
@@ -33,31 +38,26 @@ export async function SiteShell({ children, user }: Props) {
           <Link href="/rules" className={pathname === "/rules" ? "nav-link is-active" : "nav-link"}>
             就業規則
           </Link>
-          {user?.isAdmin ? (
-            <Link href="/upload" className={pathname === "/upload" ? "nav-link is-active nav-upload-link" : "nav-link nav-upload-link"}>
+          {user.isAdmin ? (
+            <Link
+              href="/upload"
+              className={pathname === "/upload" ? "nav-link is-active nav-upload-link" : "nav-link nav-upload-link"}
+            >
               資料アップロード
             </Link>
           ) : null}
         </nav>
 
         <div className="header-actions">
-          {user ? (
-            <>
-              <div className="user-badge">
-                <span>{user.name}</span>
-                <span className={user.isAdmin ? "role-pill is-admin" : "role-pill is-employee"}>
-                  {user.isAdmin ? "管理者" : "一般社員"}
-                </span>
-              </div>
-              <Link href="/logout" className="logout-button">
-                ログアウト
-              </Link>
-            </>
-          ) : (
-            <Link href="/login" className="solid-link">
-              社員ログイン
-            </Link>
-          )}
+          <div className="user-badge">
+            <span>{user.name}</span>
+            <span className={user.isAdmin ? "role-pill is-admin" : "role-pill is-employee"}>
+              {user.isAdmin ? "管理者" : "一般社員"}
+            </span>
+          </div>
+          <Link href="/logout" className="logout-button">
+            ログアウト
+          </Link>
         </div>
       </header>
 
