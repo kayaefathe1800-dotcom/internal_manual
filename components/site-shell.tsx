@@ -33,12 +33,11 @@ export async function SiteShell({ children, user }: Props) {
           <Link href="/rules" className={pathname === "/rules" ? "nav-link is-active" : "nav-link"}>
             就業規則
           </Link>
-          <Link href="/admin" className={pathname === "/admin" ? "nav-link is-active" : "nav-link"}>
-            管理者
-          </Link>
-          <Link href="/upload" className={pathname === "/upload" ? "nav-link is-active nav-upload-link" : "nav-link nav-upload-link"}>
-            資料アップロード
-          </Link>
+          {user?.isAdmin ? (
+            <Link href="/upload" className={pathname === "/upload" ? "nav-link is-active nav-upload-link" : "nav-link nav-upload-link"}>
+              資料アップロード
+            </Link>
+          ) : null}
         </nav>
 
         <div className="header-actions">
@@ -46,8 +45,8 @@ export async function SiteShell({ children, user }: Props) {
             <>
               <div className="user-badge">
                 <span>{user.name}</span>
-                <span className={user.role === "admin" ? "role-pill is-admin" : "role-pill is-employee"}>
-                  {user.role === "admin" ? "管理者" : "一般社員"}
+                <span className={user.isAdmin ? "role-pill is-admin" : "role-pill is-employee"}>
+                  {user.isAdmin ? "管理者" : "一般社員"}
                 </span>
               </div>
               <Link href="/logout" className="logout-button">

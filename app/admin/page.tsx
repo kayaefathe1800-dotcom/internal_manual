@@ -12,7 +12,7 @@ export default async function AdminPage() {
     redirect("/login?redirect=/admin");
   }
 
-  if (user.role !== "admin") {
+  if (!user.isAdmin) {
     redirect("/");
   }
 
@@ -26,7 +26,7 @@ export default async function AdminPage() {
             <p className="section-label">管理者ページ</p>
             <h1>運用ダッシュボード</h1>
           </div>
-          <p>Supabase 連携前の MVP として、公開状況と次の実装対象を確認できます。</p>
+          <p>管理者専用の資料管理と、今後の本番連携に向けた状況を確認できます。</p>
         </div>
 
         <div className="stats-grid">
@@ -62,12 +62,12 @@ export default async function AdminPage() {
             <p>現在のデモログインを、実社員アカウント連携へ置き換えます。</p>
           </article>
           <article className="document-list-card">
-            <h3>管理画面 CRUD</h3>
-            <p>お知らせ、文書、タグ、添付 PDF を管理者が更新できるようにします。</p>
+            <h3>資料メタ情報の DB 化</h3>
+            <p>manifest ベースの管理を、Supabase のテーブル管理へ切り替えます。</p>
           </article>
           <article className="document-list-card">
-            <h3>AI 検索追加</h3>
-            <p>ベクトル検索や要約付き回答を API 層へ追加しやすい構成にしています。</p>
+            <h3>ストレージ永続化</h3>
+            <p>本番では Supabase Storage か Vercel Blob に切り替えると安全です。</p>
           </article>
         </div>
         <Link href="/" className="ghost-link">

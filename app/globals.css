@@ -251,32 +251,6 @@ button {
   gap: 18px;
 }
 
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.hero-upload-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 220px;
-}
-
-.upload-cta-panel {
-  text-align: center;
-}
-
-.upload-cta-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: min(100%, 360px);
-  font-size: 1rem;
-}
-
 .hero-copy-block h1,
 .page-heading h1,
 .login-card h1 {
@@ -390,24 +364,6 @@ button {
 .search-main {
   display: grid;
   gap: 16px;
-}
-
-.search-upload-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid rgba(182, 102, 47, 0.16);
-  border-radius: 20px;
-  background: rgba(255, 247, 237, 0.8);
-}
-
-.search-upload-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 170px;
 }
 
 .search-form {
@@ -597,6 +553,11 @@ button {
   border: 1px solid var(--line);
 }
 
+.stored-file-header {
+  display: grid;
+  gap: 6px;
+}
+
 .stored-file-item strong {
   display: block;
   margin-bottom: 6px;
@@ -605,6 +566,32 @@ button {
 .stored-file-item span {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.stored-file-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.toolbar-button,
+.action-button,
+.danger-button {
+  cursor: pointer;
+}
+
+.toolbar-button,
+.action-button {
+  padding: 10px 14px;
+}
+
+.danger-button {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(161, 70, 60, 0.16);
+  background: #fbe9e7;
+  color: var(--danger);
 }
 
 .document-meta {
@@ -803,11 +790,6 @@ button {
   .user-badge {
     width: 100%;
     justify-content: center;
-  }
-
-  .search-upload-banner {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .pdf-frame {

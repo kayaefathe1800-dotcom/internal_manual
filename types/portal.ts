@@ -5,6 +5,7 @@ export type PortalUser = {
   name: string;
   email: string;
   role: UserRole;
+  isAdmin: boolean;
 };
 
 export type PortalCategory = "manual" | "rule";
@@ -39,4 +40,11 @@ export type SearchResult = {
   updatedAt: string;
   tags: string[];
   score: number;
+};
+
+export type StoredFileRecord = {
+  id: string;
+  fileName: string;
+  url: string;
+  createdAt: string;
 };

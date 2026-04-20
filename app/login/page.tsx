@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: Props) {
       <section className="login-card">
         <p className="eyebrow">社員ログイン</p>
         <h1>社内ナレッジポータルにログイン</h1>
-        <p>本番では Supabase Auth に置き換える前提で、MVP ではデモアカウントで動作確認できます。</p>
+        <p>管理者は資料のアップロード・閲覧・削除を行えます。一般社員は検索と閲覧のみ利用できます。</p>
 
         <LoginForm redirectTo={redirectTo} />
 

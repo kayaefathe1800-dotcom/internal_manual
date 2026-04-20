@@ -13,6 +13,7 @@ export const demoUsers: DemoUser[] = [
     name: "管理者 佐藤",
     email: "admin@example.co.jp",
     role: "admin",
+    isAdmin: true,
     password: "admin123"
   },
   {
@@ -20,6 +21,7 @@ export const demoUsers: DemoUser[] = [
     name: "一般社員 田中",
     email: "employee@example.co.jp",
     role: "employee",
+    isAdmin: false,
     password: "employee123"
   }
 ];
@@ -38,9 +40,15 @@ export async function getCurrentUser(): Promise<PortalUser | null> {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isAdmin: user.isAdmin
       }
     : null;
+}
+
+export async function getAdminUser() {
+  const user = await getCurrentUser();
+  return user?.isAdmin ? user : null;
 }
 
 export function authenticateUser(email: string, password: string, role: UserRole) {

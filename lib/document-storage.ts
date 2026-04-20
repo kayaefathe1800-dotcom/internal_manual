@@ -1,70 +1,144 @@
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import type { StoredFileRecord } from "../types/portal";
 
 const STORAGE_DIR_NAME = "社内資料";
+const MANIFEST_FILE_NAME = "manifest.json";
 
 function getStorageDir() {
   const baseDir = process.env.VERCEL ? "/tmp" : process.cwd();
   return path.join(baseDir, STORAGE_DIR_NAME);
 }
 
-export type StoredDocument = {
-  name: string;
-  size: number;
-  updatedAt: string;
-};
+function getManifestPath() {
+  return path.join(getStorageDir(), MANIFEST_FILE_NAME);
+}
 
-export async function ensureStorageDir() {
+async function ensureStorageDir() {
   const storageDir = getStorageDir();
   await mkdir(storageDir, { recursive: true });
   return storageDir;
 }
 
-export async function listStoredDocuments(): Promise<StoredDocument[]> {
+async function readManifest(): Promise<StoredFileRecord[]> {
+  await ensureStorageDir();
+
   try {
-    const storageDir = await ensureStorageDir();
-    const names = await readdir(storageDir);
-
-    const files = await Promise.all(
-      names.map(async (name) => {
-        const target = path.join(storageDir, name);
-        const info = await stat(target);
-
-        if (!info.isFile()) {
-          return null;
-        }
-
-        return {
-          name,
-          size: info.size,
-          updatedAt: info.mtime.toISOString()
-        } satisfies StoredDocument;
-      })
-    );
-
-    return files
-      .filter((file): file is StoredDocument => file !== null)
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    const manifest = await readFile(getManifestPath(), "utf8");
+    const parsed = JSON.parse(manifest) as StoredFileRecord[];
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
+}
+
+async function writeManifest(records: StoredFileRecord[]) {
+  await ensureStorageDir();
+  await writeFile(getManifestPath(), JSON.stringify(records, null, 2), "utf8");
 }
 
 function sanitizeFileName(name: string) {
   return name.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, "_");
 }
 
-export async function saveUploadedDocument(fileName: string, buffer: Buffer) {
+function getContentType(fileName: string) {
+  const extension = path.extname(fileName).toLowerCase();
+
+  switch (extension) {
+    case ".pdf":
+      return "application/pdf";
+    case ".doc":
+      return "application/msword";
+    case ".docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case ".xls":
+      return "application/vnd.ms-excel";
+    case ".xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case ".csv":
+      return "text/csv; charset=utf-8";
+    case ".txt":
+      return "text/plain; charset=utf-8";
+    case ".ppt":
+      return "application/vnd.ms-powerpoint";
+    case ".pptx":
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+export async function listStoredDocuments(): Promise<StoredFileRecord[]> {
+  const records = await readManifest();
+  return records.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
+export async function saveUploadedDocument(fileName: string, buffer: Buffer): Promise<StoredFileRecord> {
   const storageDir = await ensureStorageDir();
-
+  const manifest = await readManifest();
   const safeName = sanitizeFileName(fileName);
-  const stampedName = `${Date.now()}-${safeName}`;
-  const target = path.join(storageDir, stampedName);
+  const id = randomUUID();
+  const storedName = `${id}-${safeName}`;
+  const filePath = path.join(storageDir, storedName);
 
-  await writeFile(target, buffer);
+  await writeFile(filePath, buffer);
+
+  const record: StoredFileRecord = {
+    id,
+    fileName: safeName,
+    url: `/api/files/${id}/download`,
+    createdAt: new Date().toISOString()
+  };
+
+  await writeManifest([record, ...manifest]);
+  return record;
+}
+
+export async function deleteStoredDocument(id: string) {
+  const storageDir = await ensureStorageDir();
+  const manifest = await readManifest();
+  const targetRecord = manifest.find((record) => record.id === id);
+
+  if (!targetRecord) {
+    return null;
+  }
+
+  const fileNames = await readdir(storageDir);
+  const matchedFile = fileNames.find((name) => name.startsWith(`${id}-`));
+
+  if (matchedFile) {
+    await unlink(path.join(storageDir, matchedFile)).catch(() => undefined);
+  }
+
+  await writeManifest(manifest.filter((record) => record.id !== id));
+  return targetRecord;
+}
+
+export async function getStoredDocument(id: string) {
+  const storageDir = await ensureStorageDir();
+  const manifest = await readManifest();
+  const targetRecord = manifest.find((record) => record.id === id);
+
+  if (!targetRecord) {
+    return null;
+  }
+
+  const fileNames = await readdir(storageDir);
+  const matchedFile = fileNames.find((name) => name.startsWith(`${id}-`));
+
+  if (!matchedFile) {
+    return null;
+  }
+
+  const filePath = path.join(storageDir, matchedFile);
+  const fileInfo = await stat(filePath);
+  const buffer = await readFile(filePath);
 
   return {
-    fileName: stampedName,
-    directory: storageDir
+    record: targetRecord,
+    buffer,
+    contentType: getContentType(targetRecord.fileName),
+    size: fileInfo.size
   };
 }
