@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { PortalUser } from "../types/portal";
+import { UploadNavButton } from "./upload-nav-button";
 
 type Props = {
   children: ReactNode;
@@ -38,14 +39,7 @@ export async function SiteShell({ children, user }: Props) {
           <Link href="/rules" className={pathname === "/rules" ? "nav-link is-active" : "nav-link"}>
             就業規則
           </Link>
-          {user.isAdmin ? (
-            <Link
-              href="/upload"
-              className={pathname === "/upload" ? "nav-link is-active nav-upload-link" : "nav-link nav-upload-link"}
-            >
-              資料アップロード
-            </Link>
-          ) : null}
+          <UploadNavButton isActive={pathname === "/upload"} initialIsAdmin={user.isAdmin} />
         </nav>
 
         <div className="header-actions">

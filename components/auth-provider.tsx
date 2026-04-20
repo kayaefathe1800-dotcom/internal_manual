@@ -7,12 +7,14 @@ import type { PortalUser } from "../types/portal";
 type AuthContextValue = {
   user: PortalUser | null;
   ready: boolean;
+  loading: boolean;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   ready: false,
+  loading: true,
   logout: () => undefined
 });
 
@@ -46,7 +48,7 @@ export function AuthProvider({ children }: Props) {
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, ready, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, ready, loading: !ready, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

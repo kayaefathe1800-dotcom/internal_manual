@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { storeToken } from "../lib/auth-client";
+import { loadCurrentSession, storeToken } from "../lib/auth-client";
 import type { PortalUser } from "../types/portal";
 
 type Props = {
@@ -46,6 +46,7 @@ export function LoginForm({ redirectTo }: Props) {
       }
 
       storeToken(data.token);
+      await loadCurrentSession();
       window.location.href = redirectTo || "/";
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "ログインに失敗しました。");

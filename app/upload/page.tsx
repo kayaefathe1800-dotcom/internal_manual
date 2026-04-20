@@ -7,12 +7,8 @@ import { listStoredDocuments } from "../../lib/document-storage";
 export default async function UploadPage() {
   const user = await getCurrentUser();
 
-  if (!user) {
+  if (!user || !user.isAdmin) {
     redirect("/login?redirect=/upload");
-  }
-
-  if (!user.isAdmin) {
-    redirect("/");
   }
 
   const storedDocuments = await listStoredDocuments();
