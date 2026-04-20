@@ -19,13 +19,25 @@ export async function GET() {
       {
         error: "認証が必要です。"
       },
-      { status: 401 }
+      {
+        status: 401,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 
-  return NextResponse.json({
-    user,
-    token,
-    expiresAt: getSessionExpiresAt(token)
-  });
+  return NextResponse.json(
+    {
+      user,
+      token,
+      expiresAt: getSessionExpiresAt(token)
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store"
+      }
+    }
+  );
 }

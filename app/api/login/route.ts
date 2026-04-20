@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   authenticateUser,
@@ -20,14 +19,29 @@ export async function POST(request: Request) {
       {
         error: "メールアドレスまたはパスワードが正しくありません。"
       },
-      { status: 401 }
+      {
+        status: 401,
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 
   const token = issueSessionToken(user);
-  const cookieStore = await cookies();
+  const response = NextResponse.json(
+    {
+      user,
+      token
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store"
+      }
+    }
+  );
 
-  cookieStore.set(getSessionCookieName(), token, {
+  response.cookies.set(getSessionCookieName(), token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -35,8 +49,5 @@ export async function POST(request: Request) {
     maxAge: getSessionDurationSeconds()
   });
 
-  return NextResponse.json({
-    user,
-    token
-  });
+  return response;
 }

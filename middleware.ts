@@ -23,6 +23,25 @@ function isPublicPath(pathname: string) {
   return pathname === "/login";
 }
 
+function isPrefetchRequest(request: NextRequest) {
+  return (
+    request.headers.has("next-router-prefetch") ||
+    request.headers.get("purpose") === "prefetch" ||
+    request.headers.get("x-middleware-prefetch") === "1"
+  );
+}
+
+function buildNextResponse(request: NextRequest, pathname: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders
+    }
+  });
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
@@ -35,13 +54,11 @@ export function middleware(request: NextRequest) {
   }
 
   if (isPublicPath(pathname)) {
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-pathname", pathname);
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders
-      }
-    });
+    return buildNextResponse(request, pathname);
+  }
+
+  if (request.method !== "GET" || isPrefetchRequest(request) || request.headers.get("sec-fetch-dest") !== "document") {
+    return buildNextResponse(request, pathname);
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
@@ -54,14 +71,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-pathname", pathname);
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders
-    }
-  });
+  return buildNextResponse(request, pathname);
 }
 
 export const config = {
