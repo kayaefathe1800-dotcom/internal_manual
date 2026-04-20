@@ -13,7 +13,7 @@ export default async function Home() {
       <section className="hero-panel">
         <div className="hero-copy-block">
           <p className="eyebrow">社内ポータル MVP</p>
-          <h1>社内マニュアルと就業規則を、自然な日本語でまとめて検索。</h1>
+          <h1>社内マニュアルと就業規則を、まとめて検索</h1>
           <p className="hero-description">
             タイトル・本文・タグを対象に、通常検索とあいまい検索を組み合わせて必要な情報へすばやくアクセスできます。
             将来的な AI 検索追加を見据えて、検索ロジックは API として分離しています。
