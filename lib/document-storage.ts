@@ -1,14 +1,10 @@
-import os from "node:os";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PortalCategory, StoredFileRecord } from "../types/portal";
 
 const BUNDLED_DOCUMENTS_DIR = path.join(process.cwd(), "data", "documents");
-const RUNTIME_DOCUMENTS_DIR =
-  process.env.NODE_ENV === "production"
-    ? path.join(os.tmpdir(), "data", "documents")
-    : BUNDLED_DOCUMENTS_DIR;
+const RUNTIME_DOCUMENTS_DIR = process.env.VERCEL ? path.join("/tmp", "data", "documents") : BUNDLED_DOCUMENTS_DIR;
 const MANIFEST_FILE_NAME = "manifest.json";
 
 type RuntimeManifestRecord = StoredFileRecord;
@@ -115,7 +111,6 @@ async function listBundledRootFiles() {
 }
 
 async function listBundledDocuments() {
-  await ensureCategoryDirs(BUNDLED_DOCUMENTS_DIR);
   const [manuals, rules, rootFiles] = await Promise.all([
     listBundledCategory("manual"),
     listBundledCategory("rule"),
