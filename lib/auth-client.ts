@@ -57,6 +57,11 @@ async function fetchSession() {
   return data;
 }
 
+async function refreshSessionToken() {
+  const session = await fetchSession();
+  return session?.token ?? null;
+}
+
 export async function ensureSessionToken() {
   const storedToken = getStoredToken();
 
@@ -69,26 +74,42 @@ export async function ensureSessionToken() {
 }
 
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-  const token = await ensureSessionToken();
-  const headers = new Headers(init.headers ?? {});
+  async function runRequest(tokenOverride?: string | null) {
+    const token = tokenOverride ?? (await ensureSessionToken());
+    const headers = new Headers(init.headers ?? {});
 
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return fetch(input, {
+      ...init,
+      headers,
+      credentials: "same-origin"
+    });
   }
 
-  const response = await fetch(input, {
-    ...init,
-    headers,
-    credentials: "same-origin"
-  });
+  let response = await runRequest();
 
-  if (response.status === 401) {
-    clearStoredToken();
+  if (response.status !== 401) {
+    return response;
+  }
 
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-      const redirect = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
-      window.location.href = `/login?redirect=${redirect}`;
+  const refreshedToken = await refreshSessionToken();
+
+  if (refreshedToken) {
+    response = await runRequest(refreshedToken);
+
+    if (response.status !== 401) {
+      return response;
     }
+  }
+
+  clearStoredToken();
+
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    const redirect = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+    window.location.href = `/login?redirect=${redirect}`;
   }
 
   return response;

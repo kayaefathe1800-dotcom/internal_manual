@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserFromAuthorizationHeader } from "../../../../lib/auth";
+import { getUserFromRequest } from "../../../../lib/auth";
 import { deleteStoredDocument } from "../../../../lib/document-storage";
 
 type Props = {
@@ -27,7 +27,7 @@ function forbiddenResponse() {
 }
 
 function requireAdmin(request: Request) {
-  const session = getUserFromAuthorizationHeader(request);
+  const session = getUserFromRequest(request);
 
   if (!session) {
     return unauthorizedResponse();

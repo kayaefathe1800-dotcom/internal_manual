@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserFromAuthorizationHeader } from "../../../lib/auth";
+import { getUserFromRequest } from "../../../lib/auth";
 import { searchDocuments } from "../../../lib/search";
 import type { PortalCategory } from "../../../types/portal";
 
@@ -13,7 +13,7 @@ function unauthorizedResponse() {
 }
 
 export async function POST(request: Request) {
-  const session = getUserFromAuthorizationHeader(request);
+  const session = getUserFromRequest(request);
 
   if (!session) {
     return unauthorizedResponse();

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserFromAuthorizationHeader } from "../../../lib/auth";
+import { getUserFromRequest } from "../../../lib/auth";
 import { listStoredDocuments, saveUploadedDocument } from "../../../lib/document-storage";
 
 function unauthorizedResponse() {
@@ -21,7 +21,7 @@ function forbiddenResponse() {
 }
 
 function requireAdmin(request: Request) {
-  const session = getUserFromAuthorizationHeader(request);
+  const session = getUserFromRequest(request);
 
   if (!session) {
     return unauthorizedResponse();

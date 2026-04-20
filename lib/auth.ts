@@ -161,3 +161,21 @@ export function getUserFromAuthorizationHeader(request: Request | NextRequest) {
 
   return user ? { token, user } : null;
 }
+
+export function getUserFromRequest(request: Request | NextRequest) {
+  const headerSession = getUserFromAuthorizationHeader(request);
+
+  if (headerSession) {
+    return headerSession;
+  }
+
+  const cookieToken = request.headers
+    .get("cookie")
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SESSION_COOKIE}=`))
+    ?.slice(`${SESSION_COOKIE}=`.length);
+
+  const user = verifySessionToken(cookieToken ?? null);
+  return user && cookieToken ? { token: cookieToken, user } : null;
+}
