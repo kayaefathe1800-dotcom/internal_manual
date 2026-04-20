@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getUserFromRequest } from "../../../lib/auth";
 import { listStoredDocuments, saveUploadedDocument } from "../../../lib/document-storage";
 import type { PortalCategory } from "../../../types/portal";
@@ -87,6 +88,9 @@ export async function POST(request: Request) {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const savedFile = await saveUploadedDocument(file.name, category, buffer);
+  revalidatePath("/manuals");
+  revalidatePath("/rules");
+  revalidatePath("/upload");
 
   return NextResponse.json(savedFile);
 }

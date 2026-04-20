@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getUserFromRequest } from "../../../../lib/auth";
 import { deleteStoredDocument } from "../../../../lib/document-storage";
 
@@ -58,6 +59,10 @@ export async function DELETE(request: Request, { params }: Props) {
       { status: 404 }
     );
   }
+
+  revalidatePath("/manuals");
+  revalidatePath("/rules");
+  revalidatePath("/upload");
 
   return NextResponse.json({
     success: true

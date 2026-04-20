@@ -4,6 +4,8 @@ import { getCurrentUser } from "../../lib/auth";
 import { listStoredDocuments } from "../../lib/document-storage";
 import { getDocumentsByCategory } from "../../lib/search";
 
+export const dynamic = "force-dynamic";
+
 export default async function RulesPage() {
   const user = await getCurrentUser();
   const rules = getDocumentsByCategory("rule");
