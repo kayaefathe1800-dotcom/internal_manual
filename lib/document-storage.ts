@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { StoredFileRecord } from "../types/portal";
+import type { PortalCategory, StoredFileRecord } from "../types/portal";
 
 const STORAGE_DIR_NAME = "社内資料";
 const MANIFEST_FILE_NAME = "manifest.json";
@@ -26,8 +26,16 @@ async function readManifest(): Promise<StoredFileRecord[]> {
 
   try {
     const manifest = await readFile(getManifestPath(), "utf8");
-    const parsed = JSON.parse(manifest) as StoredFileRecord[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(manifest) as Array<StoredFileRecord | (Omit<StoredFileRecord, "category"> & { category?: PortalCategory })>;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.map((record) => ({
+      ...record,
+      category: record.category === "rule" ? "rule" : "manual"
+    }));
   } catch {
     return [];
   }
@@ -69,12 +77,17 @@ function getContentType(fileName: string) {
   }
 }
 
-export async function listStoredDocuments(): Promise<StoredFileRecord[]> {
+export async function listStoredDocuments(category?: PortalCategory): Promise<StoredFileRecord[]> {
   const records = await readManifest();
-  return records.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  const filteredRecords = category ? records.filter((record) => record.category === category) : records;
+  return filteredRecords.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
-export async function saveUploadedDocument(fileName: string, buffer: Buffer): Promise<StoredFileRecord> {
+export async function saveUploadedDocument(
+  fileName: string,
+  category: PortalCategory,
+  buffer: Buffer
+): Promise<StoredFileRecord> {
   const storageDir = await ensureStorageDir();
   const manifest = await readManifest();
   const safeName = sanitizeFileName(fileName);
@@ -87,6 +100,7 @@ export async function saveUploadedDocument(fileName: string, buffer: Buffer): Pr
   const record: StoredFileRecord = {
     id,
     fileName: safeName,
+    category,
     url: `/api/files/${id}/download`,
     createdAt: new Date().toISOString()
   };

@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { authFetch } from "../lib/auth-client";
 import { useAuth } from "./auth-provider";
-import type { StoredFileRecord } from "../types/portal";
+import type { PortalCategory, StoredFileRecord } from "../types/portal";
 
 type Props = {
   initialFiles: StoredFileRecord[];
@@ -18,6 +19,7 @@ type FilesResponse = {
 type UploadResponse = {
   id?: string;
   fileName?: string;
+  category?: PortalCategory;
   url?: string;
   createdAt?: string;
   error?: string;
@@ -33,10 +35,15 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getCategoryLabel(category: PortalCategory) {
+  return category === "manual" ? "マニュアル" : "就業規則";
+}
+
 export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<StoredFileRecord[]>(initialFiles);
+  const [category, setCategory] = useState<PortalCategory>("manual");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -88,6 +95,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("category", category);
 
     startTransition(async () => {
       setError(null);
@@ -105,7 +113,7 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
         }
 
         await refreshFiles();
-        setMessage(`${data.fileName ?? "資料"} をアップロードしました。`);
+        setMessage(`${data.fileName ?? "資料"} を ${getCategoryLabel(data.category ?? category)} としてアップロードしました。`);
 
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
@@ -185,10 +193,26 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
 
       <div className="upload-panel-grid">
         <div className="upload-dropzone">
-          <p className="upload-title">社内資料のアップロード・閲覧・削除ができます。</p>
+          <p className="upload-title">アップロード時にカテゴリーを必ず選択します。</p>
           <p className="upload-copy">
-            PDF、Word、Excel、CSV、テキスト、PowerPoint を登録できます。アップロード後は一覧を再取得して即時反映します。
+            ファイルは `マニュアル` または `就業規則` として保存され、それぞれの一覧ページに表示されます。
           </p>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="upload-category">
+              カテゴリー
+            </label>
+            <select
+              id="upload-category"
+              className="select-input"
+              value={category}
+              onChange={(event) => setCategory(event.target.value as PortalCategory)}
+            >
+              <option value="manual">マニュアル</option>
+              <option value="rule">就業規則</option>
+            </select>
+          </div>
+
           <button type="button" className="submit-button upload-button-wide" onClick={handleChooseFile} disabled={isPending}>
             {isPending ? "アップロード中..." : "資料を選択する"}
           </button>
@@ -210,10 +234,20 @@ export function DocumentUploadPanel({ initialFiles, isAdmin }: Props) {
               {files.map((file) => (
                 <article key={file.id} className="stored-file-item">
                   <div className="stored-file-header">
-                    <strong>{file.fileName}</strong>
-                    <span>登録日: {formatDate(file.createdAt)}</span>
+                    <div>
+                      <strong>{file.fileName}</strong>
+                      <div className="result-meta">
+                        <span className={file.category === "manual" ? "result-category is-manual" : "result-category is-rule"}>
+                          {getCategoryLabel(file.category)}
+                        </span>
+                        <span>登録日: {formatDate(file.createdAt)}</span>
+                      </div>
+                    </div>
                   </div>
                   <div className="stored-file-actions">
+                    <Link href={file.category === "manual" ? "/manuals" : "/rules"} className="ghost-link action-button">
+                      表示先を見る
+                    </Link>
                     <button type="button" className="ghost-link action-button" onClick={() => void handleView(file)}>
                       閲覧
                     </button>

@@ -45,6 +45,7 @@ export type SearchResult = {
 export type StoredFileRecord = {
   id: string;
   fileName: string;
+  category: PortalCategory;
   url: string;
   createdAt: string;
 };

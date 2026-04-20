@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "../../../lib/auth";
 import { listStoredDocuments, saveUploadedDocument } from "../../../lib/document-storage";
+import type { PortalCategory } from "../../../types/portal";
 
 function unauthorizedResponse() {
   return NextResponse.json(
@@ -54,6 +55,8 @@ export async function POST(request: Request) {
 
   const formData = await request.formData();
   const file = formData.get("file");
+  const categoryValue = String(formData.get("category") ?? "");
+  const category: PortalCategory | null = categoryValue === "manual" || categoryValue === "rule" ? categoryValue : null;
 
   if (!(file instanceof File)) {
     return NextResponse.json(
@@ -73,8 +76,17 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!category) {
+    return NextResponse.json(
+      {
+        error: "カテゴリーを選択してください。"
+      },
+      { status: 400 }
+    );
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
-  const savedFile = await saveUploadedDocument(file.name, buffer);
+  const savedFile = await saveUploadedDocument(file.name, category, buffer);
 
   return NextResponse.json(savedFile);
 }
