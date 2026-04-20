@@ -75,6 +75,13 @@ export function SearchExperience({ popularQueries }: Props) {
     <section className="search-panel">
       <div className="search-grid">
         <div className="search-main">
+          <div className="search-upload-banner">
+            <span className="muted-text">資料を追加したい場合はこちら</span>
+            <Link href="/#document-upload" className="solid-link search-upload-link">
+              資料アップロード
+            </Link>
+          </div>
+
           <div className="page-heading">
             <div>
               <p className="section-label">検索</p>

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { headers } from "next/headers";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import type { PortalUser } from "../types/portal";
 
@@ -7,13 +7,6 @@ type Props = {
   children: ReactNode;
   user: PortalUser | null;
 };
-
-const navItems = [
-  { href: "/", label: "トップ" },
-  { href: "/manuals", label: "マニュアル" },
-  { href: "/rules", label: "就業規則" },
-  { href: "/admin", label: "管理者" }
-];
 
 export async function SiteShell({ children, user }: Props) {
   const headerList = await headers();
@@ -31,15 +24,21 @@ export async function SiteShell({ children, user }: Props) {
         </div>
 
         <nav className="top-nav" aria-label="グローバルナビゲーション">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={pathname === item.href ? "nav-link is-active" : "nav-link"}
-            >
-              {item.label}
-            </Link>
-          ))}
+          <Link href="/" className={pathname === "/" ? "nav-link is-active" : "nav-link"}>
+            トップ
+          </Link>
+          <Link href="/manuals" className={pathname === "/manuals" ? "nav-link is-active" : "nav-link"}>
+            マニュアル
+          </Link>
+          <Link href="/rules" className={pathname === "/rules" ? "nav-link is-active" : "nav-link"}>
+            就業規則
+          </Link>
+          <Link href="/admin" className={pathname === "/admin" ? "nav-link is-active" : "nav-link"}>
+            管理者
+          </Link>
+          <Link href="/upload" className={pathname === "/upload" ? "nav-link is-active nav-upload-link" : "nav-link nav-upload-link"}>
+            資料アップロード
+          </Link>
         </nav>
 
         <div className="header-actions">

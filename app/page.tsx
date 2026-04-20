@@ -1,12 +1,16 @@
+import Link from "next/link";
+import { DocumentUploadPanel } from "../components/document-upload-panel";
 import { SearchExperience } from "../components/search-experience";
 import { SiteShell } from "../components/site-shell";
 import { announcements, popularQueries, portalDocuments } from "../data/portal-content";
 import { getCurrentUser } from "../lib/auth";
+import { listStoredDocuments } from "../lib/document-storage";
 import { getDocumentStats } from "../lib/search";
 
 export default async function Home() {
   const user = await getCurrentUser();
   const stats = getDocumentStats(portalDocuments);
+  const storedDocuments = await listStoredDocuments();
 
   return (
     <SiteShell user={user}>
@@ -18,6 +22,11 @@ export default async function Home() {
             タイトル・本文・タグを対象に、通常検索とあいまい検索を組み合わせて必要な情報へすばやくアクセスできます。
             将来的な AI 検索追加を見据えて、検索ロジックは API として分離しています。
           </p>
+          <div className="hero-actions">
+            <Link href="#document-upload" className="solid-link hero-upload-link">
+              UPLOAD / 資料アップロード
+            </Link>
+          </div>
           <div className="hero-stats">
             <div>
               <strong>{stats.total}</strong>
@@ -56,6 +65,20 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <section className="surface-panel upload-cta-panel">
+        <div className="page-heading">
+          <div>
+            <p className="section-label">UPLOAD</p>
+            <h2>資料アップロードはこちら</h2>
+          </div>
+        </div>
+        <Link href="#document-upload" className="solid-link upload-cta-link">
+          UPLOAD / 資料アップロード
+        </Link>
+      </section>
+
+      <DocumentUploadPanel documents={storedDocuments} storageFolderName="社内資料" />
 
       <SearchExperience popularQueries={popularQueries} />
     </SiteShell>
